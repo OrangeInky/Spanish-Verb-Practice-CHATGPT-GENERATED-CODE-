@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Verb Conjugation Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .controls, .score, .question, .answer {
+            margin: 20px 0;
+        }
+        button {
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .accent-buttons button {
+            padding: 5px 8px;
+            font-size: 14px;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            width: 200px;
+        }
+        .tense-option {
+            display: inline-block;
+            margin: 5px;
+        }
+        .correct {
+            color: green;
+        }
+        .incorrect {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Spanish Verb Conjugation Quiz</h1>
+    
+    <div class="controls">
+        <div>
+            <h3>Tenses:</h3>
+            <div id="tense-options">
+                <label class="tense-option"><input type="checkbox" class="tense" value="present" checked> Present</label>
+                <label class="tense-option"><input type="checkbox" class="tense" value="past-perfect"> Past Perfect</label>
+                <label class="tense-option"><input type="checkbox" class="tense" value="past-imperfect"> Past Imperfect</label>
+                <label class="tense-option"><input type="checkbox" class="tense" value="future"> Future</label>
+                <label class="tense-option"><input type="checkbox" class="tense" value="conditional"> Conditional</label>
+                <label class="tense-option"><input type="checkbox" class="tense" value="future-perfect"> Future Perfect</label>
+            </div>
+        </div>
+        <button id="irregular-mode">Toggle Irregular Verbs Only</button>
+        <button id="new-question">New Question</button>
+    </div>
+    
+    <div class="accent-buttons">
+        <button onclick="insertAccent('á')">á</button>
+        <button onclick="insertAccent('é')">é</button>
+        <button onclick="insertAccent('í')">í</button>
+        <button onclick="insertAccent('ó')">ó</button>
+        <button onclick="insertAccent('ú')">ú</button>
+        <button onclick="insertAccent('ü')">ü</button>
+        <button onclick="insertAccent('ñ')">ñ</button>
+    </div>
+    
+    <div class="score">
+        Correct: <span id="correct">0</span> | 
+        Incorrect: <span id="incorrect">0</span>
+    </div>
+    
+    <div class="question" id="question"></div>
+    
+    <div class="answer">
+        <input type="text" id="answer-input" placeholder="Your answer">
+        <button id="submit">Submit</button>
+    </div>
+    
+    <div id="feedback"></div>
+
+    <script>
+        // Verb database
+        const regularVerbs = {
+            "ar": ["hablar", "amar", "bailar", "cantar", "trabajar", "estudiar", "escuchar", "mirar", "comprar", "preguntar", 
+                   "viajar", "visitar", "necesitar", "usar", "cocinar", "limpiar", "ayudar", "buscar", "llegar", "pagar", 
+                   "llevar", "dejar", "llamar", "esperar", "entrar", "encontrar", "recordar", "terminar", "ganar", "cambiar", 
+                   "preparar", "presentar", "contestar", "descansar", "enseñar", "gritar", "salvar", "tomar", "caminar", "nadar"],
+            "er": ["comer", "beber", "correr", "aprender", "comprender", "vender", "leer", "romper", "deber", "meter", 
+                   "poseer", "temer", "esconder", "prometer", "barrer", "coser", "tejer", "llover", "morder", "sorprender", 
+                   "responder", "depender", "absorber", "encender", "prender", "atender", "defender", "extender", "perder", "querer"],
+            "ir": ["vivir", "escribir", "recibir", "abrir", "decidir", "describir", "descubrir", "discutir", "dividir", "imprimir", 
+                   "insistir", "ocurrir", "permitir", "prohibir", "subir", "sufrir", "unir", "admitir", "asistir", "consumir", 
+                   "construir", "contribuir", "cumplir", "definir", "destruir", "dormir", "elegir", "exigir", "hervir", "mentir"]
+        };
+
+        const irregularVerbs = [
+            "ser", "estar", "ir", "tener", "hacer", "poder", "saber", "poner", "decir", "venir",
+            "querer", "haber", "ver", "dar", "salir", "venir", "volver", "conocer", "sentir", "dormir",
+            "pedir", "seguir", "conseguir", "repetir", "servir", "sentirse", "morir", "preferir", "empezar", "comenzar",
+            "entender", "pensar", "perder", "cerrar", "encontrar", "contar", "mostrar", "recordar", "volar", "jugar",
+            "traer", "caer", "oír", "valer", "salir", "venir", "caber", "andar", "huir", "construir"
+        ];
+
+        const pronouns = ["yo", "tú", "él/ella/usted", "nosotros", "vosotros", "ellos/ellas/ustedes"];
+        
+        // Conjugation patterns
+        const conjugations = {
+            "present": {
+                "ar": ["o", "as", "a", "amos", "áis", "an"],
+                "er": ["o", "es", "e", "emos", "éis", "en"],
+                "ir": ["o", "es", "e", "imos", "ís", "en"]
+            },
+            "past-perfect": {
+                "ar": ["é", "aste", "ó", "amos", "asteis", "aron"],
+                "er": ["í", "iste", "ió", "imos", "isteis", "ieron"],
+                "ir": ["í", "iste", "ió", "imos", "isteis", "ieron"]
+            },
+            "past-imperfect": {
+                "ar": ["aba", "abas", "aba", "ábamos", "abais", "aban"],
+                "er": ["ía", "ías", "ía", "íamos", "íais", "ían"],
+                "ir": ["ía", "ías", "ía", "íamos", "íais", "ían"]
+            },
+            "future": {
+                "ar": ["aré", "arás", "ará", "aremos", "aréis", "arán"],
+                "er": ["eré", "erás", "erá", "eremos", "eréis", "erán"],
+                "ir": ["iré", "irás", "irá", "iremos", "iréis", "irán"]
+            },
+            "conditional": {
+                "ar": ["aría", "arías", "aría", "aríamos", "aríais", "arían"],
+                "er": ["ería", "erías", "ería", "eríamos", "eríais", "erían"],
+                "ir": ["iría", "irías", "iría", "iríamos", "iríais", "irían"]
+            },
+            "future-perfect": {
+                "ar": ["habré", "habrás", "habrá", "habremos", "habréis", "habrán"],
+                "er": ["habré", "habrás", "habrá", "habremos", "habréis", "habrán"],
+                "ir": ["habré", "habrás", "habrá", "habremos", "habréis", "habrán"]
+            }
+        };
+
+        // Irregular verb conjugations (simplified)
+        const irregularConjugations = {
+            "ser": {
+                "present": ["soy", "eres", "es", "somos", "sois", "son"],
+                "past-perfect": ["fui", "fuiste", "fue", "fuimos", "fuisteis", "fueron"],
+                "past-imperfect": ["era", "eras", "era", "éramos", "erais", "eran"],
+                "future": ["seré", "serás", "será", "seremos", "seréis", "serán"],
+                "conditional": ["sería", "serías", "sería", "seríamos", "seríais", "serían"],
+                "future-perfect": ["habré sido", "habrás sido", "habrá sido", "habremos sido", "habréis sido", "habrán sido"]
+            },
+            "estar": {
+                "present": ["estoy", "estás", "está", "estamos", "estáis", "están"],
+                "past-perfect": ["estuve", "estuviste", "estuvo", "estuvimos", "estuvisteis", "estuvieron"],
+                "past-imperfect": ["estaba", "estabas", "estaba", "estábamos", "estabais", "estaban"],
+                "future": ["estaré", "estarás", "estará", "estaremos", "estaréis", "estarán"],
+                "conditional": ["estaría", "estarías", "estaría", "estaríamos", "estaríais", "estarían"],
+                "future-perfect": ["habré estado", "habrás estado", "habrá estado", "habremos estado", "habréis estado", "habrán estado"]
+            }
+            // More irregular verbs can be added here
+        };
+
+        // Game state
+        let currentVerb = "";
+        let currentPronoun = "";
+        let currentTense = "";
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let irregularMode = false;
+
+        // DOM elements
+        const questionEl = document.getElementById("question");
+        const answerInput = document.getElementById("answer-input");
+        const submitBtn = document.getElementById("submit");
+        const feedbackEl = document.getElementById("feedback");
+        const correctEl = document.getElementById("correct");
+        const incorrectEl = document.getElementById("incorrect");
+        const newQuestionBtn = document.getElementById("new-question");
+        const irregularModeBtn = document.getElementById("irregular-mode");
+
+        // Initialize
+        document.addEventListener("DOMContentLoaded", () => {
+            generateQuestion();
+            
+            submitBtn.addEventListener("click", checkAnswer);
+            answerInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") checkAnswer();
+            });
+            
+            newQuestionBtn.addEventListener("click", generateQuestion);
+            irregularModeBtn.addEventListener("click", toggleIrregularMode);
+        });
+
+        function generateQuestion() {
+            // Clear previous feedback
+            feedbackEl.textContent = "";
+            feedbackEl.className = "";
+            answerInput.value = "";
+            answerInput.focus();
+            
+            // Get selected tenses
+            const selectedTenses = Array.from(document.querySelectorAll(".tense:checked")).map(el => el.value);
+            if (selectedTenses.length === 0) {
+                questionEl.textContent = "Please select at least one tense";
+                return;
+            }
+            
+            // Randomly select tense, pronoun, and verb
+            currentTense = selectedTenses[Math.floor(Math.random() * selectedTenses.length)];
+            currentPronoun = pronouns[Math.floor(Math.random() * pronouns.length)];
+            const pronounIndex = pronouns.indexOf(currentPronoun);
+            
+            if (irregularMode) {
+                currentVerb = irregularVerbs[Math.floor(Math.random() * irregularVerbs.length)];
+            } else {
+                // Decide between regular and irregular (20% chance for irregular)
+                const useIrregular = Math.random() < 0.2 && irregularVerbs.includes(currentVerb);
+                
+                if (useIrregular) {
+                    currentVerb = irregularVerbs[Math.floor(Math.random() * irregularVerbs.length)];
+                } else {
+                    const verbTypes = ["ar", "er", "ir"];
+                    const type = verbTypes[Math.floor(Math.random() * verbTypes.length)];
+                    currentVerb = regularVerbs[type][Math.floor(Math.random() * regularVerbs[type].length)];
+                }
+            }
+            
+            // Display question
+            questionEl.textContent = `Conjugate "${currentVerb}" for "${currentPronoun}" in ${getTenseName(currentTense)} tense:`;
+        }
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim().toLowerCase();
+            if (!userAnswer) return;
+            
+            const correctAnswer = getCorrectAnswer();
+            
+            if (userAnswer === correctAnswer) {
+                feedbackEl.textContent = "Correct!";
+                feedbackEl.className = "correct";
+                correctAnswers++;
+                correctEl.textContent = correctAnswers;
+                setTimeout(generateQuestion, 1000);
+            } else {
+                feedbackEl.textContent = `Incorrect. The correct answer is "${correctAnswer}".`;
+                feedbackEl.className = "incorrect";
+                incorrectAnswers++;
+                incorrectEl.textContent = incorrectAnswers;
+            }
+        }
+
+        function getCorrectAnswer() {
+            const pronounIndex = pronouns.indexOf(currentPronoun);
+            
+            // Check if verb is irregular
+            if (irregularConjugations[currentVerb] && irregularConjugations[currentVerb][currentTense]) {
+                return irregularConjugations[currentVerb][currentTense][pronounIndex];
+            }
+            
+            // Handle regular verbs
+            const ending = currentVerb.slice(-2);
+            let verbType = "";
+            
+            if (ending.endsWith("ar")) verbType = "ar";
+            else if (ending.endsWith("er")) verbType = "er";
+            else if (ending.endsWith("ir")) verbType = "ir";
+            
+            const root = currentVerb.slice(0, -2);
+            const conjugation = conjugations[currentTense][verbType][pronounIndex];
+            
+            // Special case for future perfect which uses haber + past participle
+            if (currentTense === "future-perfect") {
+                const pastParticiple = verbType === "ar" ? currentVerb.slice(0, -2) + "ado" : currentVerb.slice(0, -2) + "ido";
+                return conjugation + " " + pastParticiple;
+            }
+            
+            return root + conjugation;
+        }
+
+        function getTenseName(tense) {
+            const names = {
+                "present": "present",
+                "past-perfect": "past perfect (preterite)",
+                "past-imperfect": "past imperfect",
+                "future": "future",
+                "conditional": "conditional",
+                "future-perfect": "future perfect"
+            };
+            return names[tense];
+        }
+
+        function insertAccent(accent) {
+            const input = document.getElementById("answer-input");
+            const startPos = input.selectionStart;
+            const endPos = input.selectionEnd;
+            const currentValue = input.value;
+            
+            input.value = currentValue.substring(0, startPos) + accent + currentValue.substring(endPos);
+            input.focus();
+            input.setSelectionRange(startPos + 1, startPos + 1);
+        }
+
+        function toggleIrregularMode() {
+            irregularMode = !irregularMode;
+            irregularModeBtn.textContent = irregularMode ? "Toggle Regular Verbs" : "Toggle Irregular Verbs Only";
+            generateQuestion();
+        }
+    </script>
+</body>
+</html>
