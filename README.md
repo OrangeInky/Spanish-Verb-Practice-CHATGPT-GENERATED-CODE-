@@ -1,1 +1,3 @@
-# Spanish-Verb-Practice-CHATGPT-GENERATED-CODE-
+# Spanish-Verb-Practice-DEEPSEEK-GENERATED-CODE-
+
+The code is entirely deepseek generated.
